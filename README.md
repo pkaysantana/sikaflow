@@ -1,6 +1,6 @@
 # Sikaflow
 
-Sikaflow is a decentralized agent orchestration and routing system. It enables intelligent task allocation, policy-driven verification (via Civic), and automated wallet execution on Solana.
+Sikaflow is a decentralised agent orchestration and routing system. It enables intelligent task allocation, policy-driven verification (via Civic), and automated wallet execution on Solana.
 
 ## Project Structure
 

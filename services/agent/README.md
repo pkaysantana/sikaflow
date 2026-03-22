@@ -38,11 +38,29 @@ User instruction
 Traditional banking rails cannot be used by autonomous software without a human authorising each step. There is no mechanism for an agent to initiate a bank payment unilaterally.
 
 An agent with a wallet changes this:
-- It holds stable-value assets (USDC) without a bank account
+- It holds value without a bank account
 - It initiates and settles transfers autonomously using a private key
 - It moves value across borders in minutes, not days
 
-**Base** is the execution network: low cost (sub-cent fees), fast (seconds to confirm), EVM-compatible. **USDC** is the transfer asset: stable value during transit, natively supported on Base.
+**Base** is the execution network: low cost (sub-cent fees), fast (seconds to confirm), EVM-compatible.
+
+**What this demo executes:** a native ETH transfer on Base Sepolia (0.00001 ETH) as an onchain proof-of-execution. This produces a real, verifiable transaction hash. Coordinated value is accounted in GBP in the coordination layer. In production, the execution asset would be a stable-value token transferred to the recipient's resolved wallet address.
+
+---
+
+## What is real vs simulated
+
+| Element | Status | Notes |
+|---|---|---|
+| Intent parsing | Real | Claude API call on every request |
+| Route selection | Real | Deterministic logic in `routes.py` |
+| Policy inspection | Real | All checks run against every request |
+| Onchain transaction | Real if `AGENT_PRIVATE_KEY` is set | Native ETH on Base Sepolia |
+| Execution asset | ETH (proof) | Not USDC — see note above |
+| Destination wallets | Pre-configured allowlist | Not live geographic payout rails |
+| GBP fee accounting | Simulated | Fee model is illustrative |
+
+Destinations (Ghana, Nigeria, Kenya, savings) resolve to **configured allowlist wallet addresses** on Base Sepolia. They are demo wallets — they do not represent real geographic payout corridors.
 
 ---
 

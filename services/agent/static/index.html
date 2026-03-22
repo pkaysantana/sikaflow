@@ -629,11 +629,13 @@
 
       if (!approved || !exec) {
         el.classList.add('blocked');
+        const s4badge = document.getElementById('s4-mode-badge');
+        if (s4badge) s4badge.innerHTML = `<span class="exec-mode-pill exec-mode-blocked">BLOCKED</span>`;
         bod.innerHTML = `
           <div class="execution-halted">
             <span class="text-3xl">⛔</span>
             <p class="text-red-400 font-semibold text-sm mt-1">Execution halted</p>
-            <p class="text-gray-600 text-xs mt-1">Policy inspection did not approve this action. No value has moved.</p>
+            <p class="text-gray-600 text-xs mt-1">Policy inspection did not approve this action. No transaction was broadcast. No value has moved.</p>
           </div>`;
         return;
       }
@@ -681,21 +683,32 @@
       bod.innerHTML = html;
     }
 
+    function execModeBadge(r) {
+      const mode = r.execution_mode || (r.simulated ? 'SIMULATED' : 'LIVE ONCHAIN');
+      if (mode === 'LIVE ONCHAIN') return `<span class="exec-mode-pill exec-mode-live">⬤  LIVE ONCHAIN</span>`;
+      return `<span class="exec-mode-pill exec-mode-simulated">SIMULATED</span>`;
+    }
+
     function renderReceipt(r) {
-      const statusCls = r.simulated ? 'status-badge-simulated' : 'status-badge-confirmed';
-      const statusLabel = r.status;
+      // Update the stage 4 header badge
+      const s4badge = document.getElementById('s4-mode-badge');
+      if (s4badge) s4badge.innerHTML = execModeBadge(r);
+
+      const destNote = r.destination_label
+        ? `<span class="text-gray-600 text-xs ml-2">(${esc(r.destination_label)} — allowlist wallet)</span>`
+        : '';
 
       return `<div class="receipt-card">
         <div class="flex items-center gap-3 mb-4">
           <span class="text-emerald-400 text-lg">✓</span>
           <span class="text-sm font-semibold text-gray-300">${esc(r.route_name)}</span>
-          <span class="${statusCls} text-xs ml-auto">${statusLabel}</span>
+          <span class="ml-auto">${execModeBadge(r)}</span>
         </div>
         ${dataRow('Network', `<span class="mono text-xs">${esc(r.network)}</span>`)}
-        ${dataRow('Asset', r.asset)}
+        ${dataRow('Execution asset', `<span class="mono text-xs text-gray-400">${esc(r.asset)}</span>`)}
         ${dataRow('Agent wallet', `<span class="mono text-xs text-gray-500 truncate">${esc(r.agent_wallet)}</span>`)}
-        ${dataRow('Recipient', `<span class="mono text-xs text-gray-500 truncate">${esc(r.destination)}</span>${r.destination_label ? ` <span class="text-gray-600 text-xs ml-2">(${esc(r.destination_label)})</span>` : ''}`)}
-        ${dataRow('Amount', `<span class="text-white font-semibold">£${r.amount_gbp?.toFixed(2)}</span>`)}
+        ${dataRow('Recipient', `<span class="mono text-xs text-gray-500 truncate">${esc(r.destination)}</span>${destNote}`)}
+        ${dataRow('Coordinated value', `<span class="text-white font-semibold">£${r.amount_gbp?.toFixed(2)}</span> <span class="text-gray-700 text-xs ml-1">(GBP intent)</span>`)}
         ${dataRow('Fee', `<span class="text-gray-400">£${r.fee_gbp?.toFixed(2)}</span>`)}
         ${dataRow('Recipient gets', `<span class="text-emerald-400 font-semibold">£${r.received_gbp?.toFixed(2)}</span>`)}
         ${dataRow('Settlement', r.estimated_time)}
@@ -704,15 +717,17 @@
     }
 
     function renderReceiptCompact(r) {
-      const statusCls = r.simulated ? 'status-badge-simulated' : 'status-badge-confirmed';
+      const destNote = r.destination_label
+        ? `<span class="text-gray-600 text-xs ml-1">(${esc(r.destination_label)} — allowlist wallet)</span>`
+        : '';
       return `<div class="receipt-card">
         <div class="flex items-center gap-2 mb-3">
           <span class="text-emerald-400">✓</span>
           <span class="text-xs text-gray-400">${esc(r.route_name)}</span>
-          <span class="${statusCls} text-xs ml-auto">${r.status}</span>
+          <span class="ml-auto">${execModeBadge(r)}</span>
         </div>
-        ${dataRow('Recipient', `<span class="mono text-xs text-gray-500">${esc(r.destination)}</span>`)}
-        ${dataRow('Amount / fee', `<span class="text-white">£${r.amount_gbp?.toFixed(2)}</span> <span class="text-gray-600 mx-1">→ fee £${r.fee_gbp?.toFixed(2)}</span> <span class="text-emerald-400">recv £${r.received_gbp?.toFixed(2)}</span>`)}
+        ${dataRow('Recipient', `<span class="mono text-xs text-gray-500">${esc(r.destination)}</span>${destNote}`)}
+        ${dataRow('Value / fee', `<span class="text-white">£${r.amount_gbp?.toFixed(2)}</span> <span class="text-gray-600 mx-1">fee £${r.fee_gbp?.toFixed(2)}</span> <span class="text-emerald-400">recv £${r.received_gbp?.toFixed(2)}</span>`)}
         ${txHashRow(r)}
       </div>`;
     }
@@ -722,9 +737,9 @@
       const isReal = r.tx_url && r.tx_url.length > 0;
       const link = isReal
         ? `<a href="${r.tx_url}" target="_blank" class="tx-link">↗ BaseScan</a>`
-        : `<span class="text-xs text-gray-700 ml-auto">simulated</span>`;
+        : `<span class="text-xs text-gray-700 ml-auto font-mono">not broadcast</span>`;
       return `<div class="tx-hash-row">
-        <span class="text-xs text-gray-600 shrink-0 mr-2">Tx</span>
+        <span class="text-xs text-gray-600 shrink-0 mr-2">${isReal ? 'Tx hash' : 'Tx ref'}</span>
         <span class="tx-hash flex-1">${esc(r.tx_hash)}</span>
         ${link}
       </div>`;

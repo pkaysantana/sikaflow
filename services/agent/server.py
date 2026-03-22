@@ -38,6 +38,16 @@ class CoordinationRequest(BaseModel):
 
 # ─── Serve UI ─────────────────────────────────────────────────────────────────
 
+@app.get("/api/status")
+async def status():
+    """Tells the UI whether live onchain execution is configured."""
+    live = bool(os.getenv("AGENT_PRIVATE_KEY"))
+    return JSONResponse({
+        "live_execution": live,
+        "execution_mode": "LIVE ONCHAIN" if live else "SIMULATED",
+    })
+
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_ui():
     html = Path(__file__).parent / "static" / "index.html"
@@ -135,6 +145,7 @@ def _run_execution(plan: dict) -> dict:
             "estimated_time":   receipt.estimated_time,
             "tx_hash":          receipt.tx_hash,
             "tx_url":           receipt.tx_url,
+            "execution_mode":   receipt.execution_mode,
             "simulated":        receipt.simulated,
             "legs":             None,
         }
@@ -161,14 +172,16 @@ def _run_execution(plan: dict) -> dict:
             "estimated_time":   r.estimated_time,
             "tx_hash":          r.tx_hash,
             "tx_url":           r.tx_url,
+            "execution_mode":   r.execution_mode,
             "simulated":        r.simulated,
         })
 
+    any_live = any(not l.get("simulated", True) for l in legs_out if "simulated" in l)
     return {
-        "status":       "COMPLETED",
-        "network":      "Base Sepolia",
-        "asset":        "USDC",
-        "agent_wallet": legs_out[0].get("destination", "") if legs_out else "",
+        "status":         "COMPLETED",
+        "network":        "Base Sepolia",
+        "execution_mode": "LIVE ONCHAIN" if any_live else "SIMULATED",
+        "agent_wallet":   "",
         "total_gbp":    plan["total"],
         "total_fees":   plan["total_fees"],
         "net_gbp":      round(plan["total"] - plan["total_fees"], 2),

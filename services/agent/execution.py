@@ -163,9 +163,10 @@ def execute_transfer(path: ExecutionPath, amount: float, destination: str) -> Ex
 
     tx_url = (EXPLORER_BASE + tx_hash) if not simulated else ""
 
-    # Network and asset depend on rail type
+    # Network and asset labels reflect what actually executed
     if path.rail_type == "onchain":
-        network, asset = NETWORK, ASSET
+        network = NETWORK
+        asset   = EXECUTION_ASSET_LIVE if not simulated else "ETH (simulated proof)"
     elif path.rail_type == "internal":
         network, asset = "Internal Ledger", "GBP"
     else:
@@ -185,5 +186,6 @@ def execute_transfer(path: ExecutionPath, amount: float, destination: str) -> Ex
         tx_hash           = tx_hash,
         tx_url            = tx_url,
         status            = "CONFIRMED" if not simulated else "SIMULATED",
+        execution_mode    = "LIVE ONCHAIN" if not simulated else "SIMULATED",
         simulated         = simulated,
     )

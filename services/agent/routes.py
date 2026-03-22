@@ -1,66 +1,79 @@
 """
-Routes: defines available transfer corridors and selects the optimal one.
+Execution paths: available rails and selection logic.
+
+Rail types:
+  onchain     — Base L2, executable by the agent wallet without human
+                authorisation at each step; demo uses ETH as execution proof
+  traditional — SWIFT/SEPA correspondent banking, requires intermediary
+                authorisation and is not autonomously executable
+  internal    — Same-platform ledger, instant and zero-cost
 """
 
 from dataclasses import dataclass
 
 
 @dataclass
-class Route:
+class ExecutionPath:
     name: str
     description: str
-    fee_pct: float        # percentage of amount
-    fixed_fee: float      # GBP
+    fee_pct: float       # percentage of transfer amount
+    fixed_fee: float     # GBP
     time_estimate: str
-    method: str           # "bank" | "stablecoin" | "internal"
+    rail_type: str       # "onchain" | "traditional" | "internal"
 
 
-ROUTES = [
-    Route(
-        name="Direct Bank Transfer",
-        description="Traditional SWIFT/SEPA bank route",
-        fee_pct=0.025,       # 2.5%
+EXECUTION_PATHS = [
+    ExecutionPath(
+        name="Traditional Bank Rail",
+        description="SWIFT/SEPA correspondent banking — requires intermediary authorisation",
+        fee_pct=0.025,
         fixed_fee=2.50,
         time_estimate="1–3 business days",
-        method="bank",
+        rail_type="traditional",
     ),
-    Route(
-        name="Stablecoin Route (USDC)",
-        description="Convert to USDC on-chain, settle at destination",
-        fee_pct=0.005,       # 0.5%
+    ExecutionPath(
+        name="Base Onchain",
+        description="Programmable settlement on Base L2 — agent-executable without manual authorisation",
+        fee_pct=0.005,
         fixed_fee=0.50,
         time_estimate="< 5 minutes",
-        method="stablecoin",
+        rail_type="onchain",
     ),
-    Route(
-        name="Internal Wallet Transfer",
-        description="Sikaflow internal ledger (same-platform users)",
+    ExecutionPath(
+        name="Internal Ledger",
+        description="Same-platform ledger transfer — instant, zero cost",
         fee_pct=0.0,
         fixed_fee=0.0,
         time_estimate="Instant",
-        method="internal",
+        rail_type="internal",
     ),
 ]
 
 
-def calculate_fee(route: Route, amount: float) -> float:
-    return round(amount * route.fee_pct + route.fixed_fee, 2)
+def calculate_fee(path: ExecutionPath, amount: float) -> float:
+    return round(amount * path.fee_pct + path.fixed_fee, 2)
 
 
-def select_route(amount: float, destination: str) -> tuple[Route, Route | None]:
+def select_path(amount: float, destination: str) -> tuple[ExecutionPath, ExecutionPath | None]:
     """
-    Returns (best_route, alternative_route).
-    Picks cheapest route; excludes internal route unless destination is 'wallet'.
-    """
-    destination_lower = (destination or "").lower()
+    Select the optimal execution path for the transfer.
 
-    if destination_lower in ("wallet", "savings"):
-        best = next(r for r in ROUTES if r.method == "internal")
-        alt = next(r for r in ROUTES if r.method == "stablecoin")
+    Logic:
+    - Internal destinations (savings, wallet) → Internal Ledger
+    - All other destinations → ranked by cost; Base Onchain wins on price
+      and is preferred because it is agent-executable without human sign-off
+
+    Returns (best_path, alternative_path).
+    """
+    dest = (destination or "").lower().strip()
+
+    if dest in ("savings", "wallet", "ledger"):
+        best = next(p for p in EXECUTION_PATHS if p.rail_type == "internal")
+        alt  = next(p for p in EXECUTION_PATHS if p.rail_type == "onchain")
         return best, alt
 
-    candidates = [r for r in ROUTES if r.method != "internal"]
-    candidates.sort(key=lambda r: calculate_fee(r, amount))
+    candidates = [p for p in EXECUTION_PATHS if p.rail_type != "internal"]
+    candidates.sort(key=lambda p: calculate_fee(p, amount))
     best = candidates[0]
-    alt = candidates[1] if len(candidates) > 1 else None
+    alt  = candidates[1] if len(candidates) > 1 else None
     return best, alt

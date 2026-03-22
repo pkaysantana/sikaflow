@@ -486,6 +486,11 @@
     // ── Renderers ──────────────────────────────────────────────────────────────
 
     function renderAll(data) {
+      // Reset stage card state classes
+      ['s1','s2','s3','s4','s5'].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('approved','blocked');
+      });
       renderIntent(data.intent);
       renderPlan(data.plan);
       renderPolicy(data.policy);
@@ -545,12 +550,11 @@
       let html = '';
 
       if (plan.type === 'send') {
-        html += dataRow('Instruction', `<span class="text-gray-300 text-xs">${esc(plan.summary)}</span>`);
-        html += dataRow('Selected rail', `${railBadge(plan.rail_type)} <span class="text-gray-400 text-xs ml-2">${esc(plan.path_name)}</span>`);
-        html += dataRow('Description', `<span class="text-gray-500 text-xs">${esc(plan.description)}</span>`);
+        html += dataRow('Selected rail', `${railBadge(plan.rail_type)} <span class="text-gray-300 font-medium text-xs ml-2">${esc(plan.path_name)}</span>`);
+        html += dataRow('Why this rail', `<span class="text-gray-400 text-xs">${esc(plan.description)}</span>`);
         html += dataRow('Fee', `<span class="text-white">£${plan.fee.toFixed(2)}</span>`);
         if (plan.saving > 0) {
-          html += dataRow('Saving', `<span class="text-emerald-400">£${plan.saving.toFixed(2)} vs ${esc(plan.alt_path_name)}</span>`);
+          html += dataRow('Cost saving', `<span class="text-emerald-400 font-medium">£${plan.saving.toFixed(2)} cheaper than ${esc(plan.alt_path_name)}</span>`);
         }
       } else {
         // Split

@@ -257,9 +257,9 @@
         <span class="text-white font-bold text-lg tracking-tight">SIKAFLOW</span>
         <span class="text-xs text-gray-600 font-medium hidden sm:block">/ Financial Coordination</span>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-xs font-mono text-gray-500">Base Sepolia</span>
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-mono text-gray-600">Base Sepolia</span>
+        <span id="header-mode-badge" class="exec-mode-pill exec-mode-simulated" style="display:none"></span>
       </div>
     </div>
   </header>
@@ -372,7 +372,7 @@
         <div class="stage-header">
           <span class="stage-number">04</span>
           <span class="stage-title">Onchain Execution</span>
-          <span class="text-xs text-gray-700 ml-auto">Base Sepolia · USDC</span>
+          <span id="s4-mode-badge" class="ml-auto"></span>
         </div>
         <div class="stage-body" id="s4-body"></div>
       </div>
@@ -399,6 +399,25 @@
     ];
 
     let isLoading = false;
+
+    // ── Init: check execution mode on load ────────────────────────────────────
+
+    async function initStatus() {
+      try {
+        const res  = await fetch('/api/status');
+        const data = await res.json();
+        const badge = document.getElementById('header-mode-badge');
+        if (data.live_execution) {
+          badge.className = 'exec-mode-pill exec-mode-live';
+          badge.textContent = '⬤  LIVE ONCHAIN';
+        } else {
+          badge.className = 'exec-mode-pill exec-mode-simulated';
+          badge.textContent = 'SIMULATED';
+        }
+        badge.style.display = 'inline-flex';
+      } catch (_) {}
+    }
+    initStatus();
 
     // ── Input helpers ──────────────────────────────────────────────────────────
 
